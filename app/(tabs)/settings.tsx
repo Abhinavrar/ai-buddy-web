@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, ScrollView, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, View } from 'react-native';
+import { showAlert } from '@/utils/alert';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -50,7 +51,7 @@ export default function SettingsScreen() {
       router.replace('/login');
     } catch (err) {
       console.error('Sign out error:', err);
-      Alert.alert('Sign out failed', String(err));
+      showAlert('Sign out failed', String(err));
       setIsSigningOut(false);
     }
   };

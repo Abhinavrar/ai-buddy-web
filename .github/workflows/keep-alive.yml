@@ -1,0 +1,16 @@
+name: Keep Render API awake
+
+# Lives in this public repo because scheduled workflows in private repos
+# consume the limited free Actions minutes; public repos are unmetered.
+on:
+  schedule:
+    # Every 10 minutes; Render free tier sleeps after ~15 minutes idle.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: curl -fsS --max-time 120 https://ai-buddy-api-cinz.onrender.com/health || echo "ping failed (service may be redeploying)"

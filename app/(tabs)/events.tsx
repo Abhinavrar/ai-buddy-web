@@ -3,7 +3,7 @@ import { useAppTheme } from '@/components/theme-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { EventItemOut, getApiBaseUrl, getStoredAppVariant, listEvents } from '@/services/api';
+import { EventItemOut, getApiBaseUrl, getBuildVariant, getStoredAppVariant, listEvents } from '@/services/api';
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Animated, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -133,12 +133,14 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<EventCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [supportOnly, setSupportOnly] = useState(false);
+  // Seeded from the build's arm so /b/events never flashes events, even
+  // before signup; the stored per-person value refines it afterwards.
+  const [supportOnly, setSupportOnly] = useState(getBuildVariant() === 'support_only');
 
   useEffect(() => {
     let active = true;
     getStoredAppVariant().then((variant) => {
-      if (active) {
+      if (active && variant) {
         setSupportOnly(variant === 'support_only');
       }
     });

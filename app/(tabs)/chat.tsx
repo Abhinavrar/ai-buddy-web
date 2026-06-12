@@ -8,7 +8,6 @@ import { getPersonalityName, Message } from '@/constants/mock-data';
 import {
     clearSessionId,
     ensureChatSession,
-    getApiBaseUrl,
     getStoredChatHistory,
     getStoredPersonUid,
     patchPersonality,
@@ -16,12 +15,12 @@ import {
     sendChatMessage,
     uiPersonalityToApi,
 } from '@/services/api';
+import { showAlert } from '@/utils/alert';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ActivityIndicator,
-    Alert,
     FlatList,
     KeyboardAvoidingView,
     Platform,
@@ -54,7 +53,7 @@ export default function ChatScreen() {
   const bootstrap = useCallback(async (personalityLabel: string) => {
     const uid = await getStoredPersonUid();
     if (!uid) {
-      Alert.alert('Sign up required', 'Create an account so we can save your Person ID on this device.');
+      showAlert('Sign up required', 'Create an account so we can save your Person ID on this device.');
       setSessionReady(false);
       return;
     }
@@ -96,7 +95,7 @@ export default function ChatScreen() {
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : String(e);
-          Alert.alert('Cannot start chat', `${msg}\n\nAPI: ${getApiBaseUrl()}`);
+          showAlert('Cannot start chat', `Please check your internet connection and try again.\n\nDetails: ${msg}`);
           setSessionReady(false);
         }
       }
@@ -110,14 +109,14 @@ export default function ChatScreen() {
     async (label: string) => {
       const uid = personUid ?? (await getStoredPersonUid());
       if (!uid) {
-        Alert.alert('Sign up required', 'Create an account so we can save your Person ID on this device.');
+        showAlert('Sign up required', 'Create an account so we can save your Person ID on this device.');
         return;
       }
       try {
         await patchPersonality(uid, uiPersonalityToApi(label));
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        Alert.alert('Personality update failed', msg);
+        showAlert('Personality update failed', msg);
       }
     },
     [personUid]
@@ -153,7 +152,7 @@ export default function ChatScreen() {
 
   const handleSendMessage = async (message: string) => {
     if (!sessionReady) {
-      Alert.alert('Not ready', 'Connecting to the server… try again in a moment.');
+      showAlert('Not ready', 'Connecting to the server… try again in a moment.');
       return;
     }
     const userMessage: Message = {
@@ -190,10 +189,10 @@ export default function ChatScreen() {
           };
           setMessages((prev) => [...prev, aiMessage]);
         } catch (err2) {
-          Alert.alert('Send failed', String(err2));
+          showAlert('Send failed', String(err2));
         }
       } else {
-        Alert.alert('Send failed', `${msg}\n\nAPI: ${getApiBaseUrl()}`);
+        showAlert('Send failed', `Your message could not be sent. Please try again.\n\nDetails: ${msg}`);
       }
     } finally {
       setSending(false);

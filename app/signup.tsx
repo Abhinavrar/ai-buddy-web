@@ -5,7 +5,6 @@ import { Link, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Animated,
     ScrollView,
     StyleSheet,
@@ -13,7 +12,8 @@ import {
     TouchableOpacity,
 } from 'react-native';
 
-import { createPerson, getApiBaseUrl, saveAccount, saveAppVariant, saveIdentity, uiPersonalityToApi } from '@/services/api';
+import { createPerson, saveAccount, saveAppVariant, saveIdentity, uiPersonalityToApi } from '@/services/api';
+import { showAlert } from '@/utils/alert';
 
 export default function SignupScreen() {
   const [username, setUsername] = useState('');
@@ -40,17 +40,17 @@ export default function SignupScreen() {
 
   async function onCreateAccount() {
     if (!username.trim()) {
-      Alert.alert('Username required', 'Please enter a username to continue.');
+      showAlert('Username required', 'Please enter a username to continue.');
       return;
     }
 
     if (!password) {
-      Alert.alert('Password required', 'Please enter a password to continue.');
+      showAlert('Password required', 'Please enter a password to continue.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Passwords do not match', 'Please make sure both password fields match.');
+      showAlert('Passwords do not match', 'Please make sure both password fields match.');
       return;
     }
 
@@ -79,9 +79,9 @@ export default function SignupScreen() {
       router.replace('/(tabs)/home');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert(
+      showAlert(
         'Could not reach server',
-        `${msg}\n\nAPI: ${getApiBaseUrl()}\n(Run python main.py and set EXPO_PUBLIC_API_URL if needed.)`
+        `Please check your internet connection and try again in a moment.\n\nDetails: ${msg}`
       );
     } finally {
       setSubmitting(false);

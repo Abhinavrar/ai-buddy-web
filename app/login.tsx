@@ -5,7 +5,6 @@ import { Link, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Animated,
     ScrollView,
     StyleSheet,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 
 import { ensureChatSession, getSavedAccount, getStoredDisplayName, getStoredPersonUid, refreshAppVariant, saveIdentity } from '@/services/api';
+import { showAlert } from '@/utils/alert';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -76,12 +76,12 @@ export default function LoginScreen() {
 
   async function onSignIn() {
     if (!username.trim()) {
-      Alert.alert('Invalid user', 'Please enter your username.');
+      showAlert('Invalid user', 'Please enter your username.');
       return;
     }
 
     if (!password) {
-      Alert.alert('Invalid user', 'Please enter your password.');
+      showAlert('Invalid user', 'Please enter your password.');
       return;
     }
 
@@ -97,7 +97,7 @@ export default function LoginScreen() {
       if (!savedAccount?.personUid) {
         const msg = 'No saved profile - No account exists on this device. Please sign up first.';
         console.log(msg);
-        Alert.alert('No saved profile', 'No account exists on this device. Please sign up first.');
+        showAlert('No saved profile', 'No account exists on this device. Please sign up first.');
         return;
       }
 
@@ -110,7 +110,7 @@ export default function LoginScreen() {
 
       if (username.trim() !== savedAccount.username || password !== savedAccount.password) {
         console.log('Credentials do not match');
-        Alert.alert('Invalid user', 'The username or password is incorrect.');
+        showAlert('Invalid user', 'The username or password is incorrect.');
         return;
       }
 
@@ -122,7 +122,7 @@ export default function LoginScreen() {
     } catch (err) {
       console.error('Login error:', err);
       const msg = err instanceof Error ? err.message : String(err);
-      Alert.alert('Login error', msg);
+      showAlert('Login error', msg);
     } finally {
       setBusy(false);
     }
@@ -184,7 +184,7 @@ export default function LoginScreen() {
               onPress={() => {
                 onSignIn().catch(err => {
                   console.error('Unhandled login error:', err);
-                  Alert.alert('Error', 'An unexpected error occurred');
+                  showAlert('Error', 'An unexpected error occurred');
                 });
               }}
               disabled={busy || loadingProfile}
