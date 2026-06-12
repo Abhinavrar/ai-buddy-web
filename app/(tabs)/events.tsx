@@ -3,7 +3,8 @@ import { useAppTheme } from '@/components/theme-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { EventItemOut, getApiBaseUrl, listEvents } from '@/services/api';
+import { EventItemOut, getApiBaseUrl, getStoredAppVariant, listEvents } from '@/services/api';
+import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Animated, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -132,6 +133,19 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<EventCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [supportOnly, setSupportOnly] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getStoredAppVariant().then((variant) => {
+      if (active) {
+        setSupportOnly(variant === 'support_only');
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const headerAnim = useMemo(() => new Animated.Value(0), []);
   const cardAnimValues = useMemo(
     () => Array.from({ length: 100 }, () => new Animated.Value(0)),
@@ -226,6 +240,12 @@ export default function EventsScreen() {
       void Linking.openURL(event.url);
     }
   };
+
+  // Group B (support_only) must never see the events surface, even via a
+  // stale route or deep link - the tab itself is already hidden in _layout.
+  if (supportOnly) {
+    return <Redirect href="/(tabs)/home" />;
+  }
 
   const renderEventCard = (event: EventCard, index: number) => (
     <Animated.View key={event.id} style={[styles.eventCard, renderCardAnimation(index), { backgroundColor: colors.surface }]}>

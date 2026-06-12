@@ -13,7 +13,7 @@ import {
     TouchableOpacity,
 } from 'react-native';
 
-import { getSavedAccount, getStoredDisplayName, getStoredPersonUid, saveIdentity, ensureChatSession } from '@/services/api';
+import { ensureChatSession, getSavedAccount, getStoredDisplayName, getStoredPersonUid, refreshAppVariant, saveIdentity } from '@/services/api';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -88,14 +88,13 @@ export default function LoginScreen() {
     setBusy(true);
     try {
       console.log('Logging in with:', { username: username.trim() });
-      const [savedAccount, uid] = await Promise.all([
-        getSavedAccount(),
-        getStoredPersonUid(),
-      ]);
+      const savedAccount = await getSavedAccount();
 
-      console.log('Retrieved saved account:', { savedAccount, uid });
+      console.log('Retrieved saved account:', { savedAccount });
 
-      if (!uid || !savedAccount) {
+      // The saved account itself carries the personUid, so signing out
+      // (which clears the active identity) must not block logging back in.
+      if (!savedAccount?.personUid) {
         const msg = 'No saved profile - No account exists on this device. Please sign up first.';
         console.log(msg);
         Alert.alert('No saved profile', 'No account exists on this device. Please sign up first.');
@@ -117,6 +116,7 @@ export default function LoginScreen() {
 
       console.log('Credentials match, restoring identity and opening home');
       await saveIdentity(savedAccount.personUid, savedAccount.displayName);
+      await refreshAppVariant(savedAccount.personUid);
       await ensureChatSession(true);
       router.replace('/(tabs)/home');
     } catch (err) {

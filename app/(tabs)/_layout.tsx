@@ -1,11 +1,42 @@
 import { Tabs } from 'expo-router';
+import { useEffect, useState } from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/components/theme-context';
+import { AppVariant, getStoredAppVariant, getStoredPersonUid, refreshAppVariant } from '@/services/api';
 
 export default function TabLayout() {
   const { colors } = useAppTheme();
+  const [variant, setVariant] = useState<AppVariant | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadVariant() {
+      // Cached arm first so the tab bar settles immediately, then refresh
+      // from the backend in case the research team reassigned the arm.
+      const stored = await getStoredAppVariant();
+      if (active && stored) {
+        setVariant(stored);
+      }
+      const uid = await getStoredPersonUid();
+      if (!uid) {
+        return;
+      }
+      const fresh = await refreshAppVariant(uid);
+      if (active) {
+        setVariant(fresh);
+      }
+    }
+
+    void loadVariant();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const supportOnly = variant === 'support_only';
 
   return (
     <Tabs
@@ -33,6 +64,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="events"
         options={{
+          // Group B (support_only) never sees the Events surface.
+          href: supportOnly ? null : undefined,
           title: 'Events',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
         }}

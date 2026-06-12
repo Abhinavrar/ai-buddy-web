@@ -18,6 +18,7 @@ const KEYS = {
   password: 'buddy_password',
   account: 'buddy_account',
   theme: 'buddy_theme_name',
+  appVariant: 'buddy_app_variant',
 } as const;
 
 const CHAT_HISTORY_KEY_PREFIX = 'buddy_chat_history_';
@@ -31,12 +32,21 @@ export type SavedAccount = {
 
 export type ApiBuddyPersonality = 'calm' | 'friendly' | 'sassy' | 'sarcastic' | 'motivational';
 
+/** Study arm: A = social_action (full app), B = support_only (no events). */
+export type AppVariant = 'social_action' | 'support_only';
+
+export function normalizeAppVariant(value: unknown): AppVariant | null {
+  return value === 'social_action' || value === 'support_only' ? value : null;
+}
+
 export interface PersonOut {
   id: number;
   person_uid: string;
   display_name: string;
   personality_key: string;
   personality_name: string;
+  app_variant: AppVariant | null;
+  participant_code: string | null;
 }
 
 export interface SessionStartOut {
@@ -93,6 +103,8 @@ function normalizePersonOut(raw: any): PersonOut {
     display_name: raw.display_name ?? raw.displayName ?? '',
     personality_key: raw.personality_key ?? raw.personalityKey ?? raw.personality ?? '',
     personality_name: raw.personality_name ?? raw.personalityName ?? '',
+    app_variant: normalizeAppVariant(raw.app_variant ?? raw.appVariant),
+    participant_code: raw.participant_code ?? raw.participantCode ?? null,
   };
 }
 
@@ -202,17 +214,57 @@ export async function clearSessionId(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.sessionId);
 }
 
-export async function createPerson(displayName: string, personality?: ApiBuddyPersonality): Promise<PersonOut> {
+export async function createPerson(
+  displayName: string,
+  personality?: ApiBuddyPersonality,
+  participantCode?: string
+): Promise<PersonOut> {
   const res = await fetchWithTimeout(`${getApiBaseUrl()}/people/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       display_name: displayName,
       ...(personality ? { personality } : {}),
+      ...(participantCode ? { participant_code: participantCode } : {}),
     }),
   });
   const raw = await parseJsonResponse<any>(res);
   return normalizePersonOut(raw);
+}
+
+export async function getPerson(personUid: string): Promise<PersonOut> {
+  const res = await fetchWithTimeout(`${getApiBaseUrl()}/people/${personUid}`);
+  const raw = await parseJsonResponse<any>(res);
+  return normalizePersonOut(raw);
+}
+
+export async function getStoredAppVariant(): Promise<AppVariant | null> {
+  return normalizeAppVariant(await AsyncStorage.getItem(KEYS.appVariant));
+}
+
+export async function saveAppVariant(variant: AppVariant | null): Promise<void> {
+  if (variant) {
+    await AsyncStorage.setItem(KEYS.appVariant, variant);
+  } else {
+    await AsyncStorage.removeItem(KEYS.appVariant);
+  }
+}
+
+/**
+ * Re-reads the study arm from the backend (source of truth) and caches it.
+ * Falls back to the cached value when offline. Never throws.
+ */
+export async function refreshAppVariant(personUid: string): Promise<AppVariant | null> {
+  try {
+    const person = await getPerson(personUid);
+    if (person.app_variant) {
+      await saveAppVariant(person.app_variant);
+      return person.app_variant;
+    }
+  } catch {
+    // Offline or server unreachable - keep the last known arm.
+  }
+  return getStoredAppVariant();
 }
 
 export async function patchPersonality(personUid: string, personality: ApiBuddyPersonality): Promise<PersonOut> {
