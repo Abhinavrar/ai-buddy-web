@@ -17,7 +17,6 @@ import { createPerson, getApiBaseUrl, saveAccount, saveAppVariant, saveIdentity,
 
 export default function SignupScreen() {
   const [username, setUsername] = useState('');
-  const [participantCode, setParticipantCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -45,15 +44,6 @@ export default function SignupScreen() {
       return;
     }
 
-    const code = participantCode.trim().toUpperCase();
-    if (!code || !/^[AB]/.test(code)) {
-      Alert.alert(
-        'Participant code required',
-        'Enter the participant code you received from the research team (it starts with A or B, e.g. A03).'
-      );
-      return;
-    }
-
     if (!password) {
       Alert.alert('Password required', 'Please enter a password to continue.');
       return;
@@ -68,8 +58,8 @@ export default function SignupScreen() {
     try {
       const displayName = username.trim();
       const personality = uiPersonalityToApi('friendly');
-      console.log('Creating person with displayName:', displayName, 'participantCode:', code);
-      const person = await createPerson(displayName, personality, code);
+      console.log('Creating person with displayName:', displayName);
+      const person = await createPerson(displayName, personality);
       console.log('Person created:', person);
 
       await saveIdentity(person.person_uid, person.display_name);
@@ -127,20 +117,6 @@ export default function SignupScreen() {
                 value={username}
                 onChangeText={setUsername}
                 editable={!submitting}
-              />
-            </ThemedView>
-
-            <ThemedView style={styles.inputGroup}>
-              <ThemedText style={styles.label}>Participant Code</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="Code from the research team (e.g. A03)"
-                placeholderTextColor="#999"
-                value={participantCode}
-                onChangeText={setParticipantCode}
-                editable={!submitting}
-                autoCapitalize="characters"
-                autoCorrect={false}
               />
             </ThemedView>
 

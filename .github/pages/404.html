@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <title>AI Buddy</title>
+  <script>
+    // SPA fallback: send unknown routes back to the root of whichever
+    // arm's site (/a or /b) the visitor was in.
+    (function () {
+      var base = '/ai-buddy-web';
+      var p = location.pathname;
+      if (p.indexOf(base + '/a') === 0) location.replace(base + '/a/');
+      else if (p.indexOf(base + '/b') === 0) location.replace(base + '/b/');
+      else location.replace(base + '/');
+    })();
+  </script>
+</head>
+<body></body>
+</html>

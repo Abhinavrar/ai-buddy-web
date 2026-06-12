@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/components/theme-context';
-import { AppVariant, getStoredAppVariant, getStoredPersonUid, refreshAppVariant } from '@/services/api';
+import { AppVariant, getBuildVariant, getStoredAppVariant, getStoredPersonUid, refreshAppVariant } from '@/services/api';
 
 export default function TabLayout() {
   const { colors } = useAppTheme();
-  const [variant, setVariant] = useState<AppVariant | null>(null);
+  // Each deployed site has its arm baked in, so the tab bar is correct
+  // from the first frame; backend per-person data still wins if it differs.
+  const [variant, setVariant] = useState<AppVariant | null>(getBuildVariant());
 
   useEffect(() => {
     let active = true;
@@ -25,7 +27,7 @@ export default function TabLayout() {
         return;
       }
       const fresh = await refreshAppVariant(uid);
-      if (active) {
+      if (active && fresh) {
         setVariant(fresh);
       }
     }

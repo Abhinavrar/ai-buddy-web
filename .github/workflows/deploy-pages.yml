@@ -19,23 +19,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Enable GitHub Pages (first run only)
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Export static web build
-        run: npx expo export --platform web
+      - name: Export arm A (social-action)
+        run: npx expo export --platform web --output-dir dist-a
         env:
-          # Set the API_URL repository variable (Settings > Secrets and variables >
-          # Actions > Variables) once your Render URL is known; this is the fallback.
-          EXPO_PUBLIC_API_URL: ${{ vars.API_URL || 'https://ai-buddy-api.onrender.com' }}
-      - name: SPA fallback for client-side routes
-        run: cp dist/index.html dist/404.html
+          EXPO_PUBLIC_API_URL: ${{ vars.API_URL || 'https://ai-buddy-api-cinz.onrender.com' }}
+          EXPO_PUBLIC_APP_VARIANT: a
+          EXPO_BASE_URL: /ai-buddy-web/a
+      - name: Export arm B (support-only)
+        run: npx expo export --platform web --output-dir dist-b
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.API_URL || 'https://ai-buddy-api-cinz.onrender.com' }}
+          EXPO_PUBLIC_APP_VARIANT: b
+          EXPO_BASE_URL: /ai-buddy-web/b
+      - name: Assemble site (a/ + b/ + neutral landing page)
+        run: |
+          mkdir dist
+          mv dist-a dist/a
+          mv dist-b dist/b
+          cp .github/pages/index.html dist/index.html
+          cp .github/pages/404.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

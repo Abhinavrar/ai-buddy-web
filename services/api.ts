@@ -39,6 +39,17 @@ export function normalizeAppVariant(value: unknown): AppVariant | null {
   return value === 'social_action' || value === 'support_only' ? value : null;
 }
 
+/**
+ * Study arm baked into this build (each arm is deployed as its own site:
+ * /a = social_action, /b = support_only). Null in local dev builds.
+ */
+export function getBuildVariant(): AppVariant | null {
+  const v = (process.env.EXPO_PUBLIC_APP_VARIANT ?? '').toLowerCase();
+  if (v === 'a' || v === 'social_action') return 'social_action';
+  if (v === 'b' || v === 'support_only') return 'support_only';
+  return null;
+}
+
 export interface PersonOut {
   id: number;
   person_uid: string;
@@ -216,16 +227,16 @@ export async function clearSessionId(): Promise<void> {
 
 export async function createPerson(
   displayName: string,
-  personality?: ApiBuddyPersonality,
-  participantCode?: string
+  personality?: ApiBuddyPersonality
 ): Promise<PersonOut> {
+  const variant = getBuildVariant();
   const res = await fetchWithTimeout(`${getApiBaseUrl()}/people/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       display_name: displayName,
       ...(personality ? { personality } : {}),
-      ...(participantCode ? { participant_code: participantCode } : {}),
+      ...(variant ? { variant } : {}),
     }),
   });
   const raw = await parseJsonResponse<any>(res);
