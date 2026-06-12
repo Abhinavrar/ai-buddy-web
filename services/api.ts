@@ -283,7 +283,7 @@ export async function patchPersonality(personUid: string, personality: ApiBuddyP
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ personality }),
-  });
+  }, 30000);
   return parseJsonResponse<PersonOut>(res);
 }
 

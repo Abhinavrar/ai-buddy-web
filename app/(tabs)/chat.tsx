@@ -60,7 +60,11 @@ export default function ChatScreen() {
     setPersonUid(uid);
     const { personUid: p, sessionId: sid } = await ensureChatSession(true);
     setSessionId(sid);
-    await patchPersonality(p, uiPersonalityToApi(personalityLabel));
+    try {
+      await patchPersonality(p, uiPersonalityToApi(personalityLabel));
+    } catch {
+      // Personality sync is cosmetic - never block the chat on it.
+    }
     setSessionReady(true);
   }, []);
 
@@ -89,14 +93,25 @@ export default function ChatScreen() {
 
     (async () => {
       await loadChatHistory();
-      try {
-        setSessionReady(false);
-        await bootstrap(routePersonality);
-      } catch (e) {
-        if (!cancelled) {
-          const msg = e instanceof Error ? e.message : String(e);
-          showAlert('Cannot start chat', `Please check your internet connection and try again.\n\nDetails: ${msg}`);
-          setSessionReady(false);
+      setSessionReady(false);
+      // Mobile browsers kill in-flight requests when the tab is backgrounded,
+      // so the first attempt often fails right after returning to the app.
+      // Retry silently behind the "Connecting..." indicator; only alert when
+      // the connection is genuinely down.
+      const delaysMs = [0, 2000, 5000, 10000];
+      for (let attempt = 0; attempt < delaysMs.length && !cancelled; attempt++) {
+        if (delaysMs[attempt]) {
+          await new Promise((resolve) => setTimeout(resolve, delaysMs[attempt]));
+        }
+        try {
+          await bootstrap(routePersonality);
+          return;
+        } catch (e) {
+          if (attempt === delaysMs.length - 1 && !cancelled) {
+            const msg = e instanceof Error ? e.message : String(e);
+            showAlert('Cannot start chat', `Please check your internet connection and try again.\n\nDetails: ${msg}`);
+            setSessionReady(false);
+          }
         }
       }
     })();
