@@ -238,7 +238,7 @@ export async function createPerson(
       ...(personality ? { personality } : {}),
       ...(variant ? { variant } : {}),
     }),
-  });
+  }, 60000); // generous: may absorb a backend cold start
   const raw = await parseJsonResponse<any>(res);
   return normalizePersonOut(raw);
 }
@@ -292,7 +292,7 @@ export async function startSession(personUid: string, resumed: boolean): Promise
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ person_uid: personUid, resumed }),
-  });
+  }, 60000); // generous: may absorb a backend cold start
   const raw = await parseJsonResponse<any>(res);
   return normalizeSessionStartOut(raw);
 }
@@ -312,7 +312,7 @@ export async function sendChatMessage(
       message,
       include_prior_sessions: includePriorSessions,
     }),
-  });
+  }, 90000); // a reply can take a while when models are rate-limited and the fallback chain runs
   return parseJsonResponse<ChatMessageOut>(res);
 }
 
